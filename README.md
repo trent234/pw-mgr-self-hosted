@@ -17,3 +17,11 @@ Anything with cellular connection.. the more i read the more of a pain seems to 
 With this we could control a dc motor with code running on our microcontroller. Thats neat and all, but this could be a springboard to even cooler stuff... add a mounted tiny camera to control camera direction (and process video). orr setup a couple motion detectors and sync the motor to turn and record movement?
 
 https://circuitdigest.com/microcontroller-projects/interfacing-dc-motor-with-atmega16-avr-microcontroller
+
+#4
+
+rain sensor... very portlandesque. could have that outside one of our apts.. connected via wifi... give alerts to our phone when its raining at our places. lol
+
+https://circuitdigest.com/microcontroller-projects/rain-detector-using-arduino
+
+i just discovered https://circuitdigest.com/microcontroller-projects/ tonight and it is a treasure trove.
