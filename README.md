@@ -25,3 +25,34 @@ rain sensor... very portlandesque. could have that outside one of our apts.. con
 https://circuitdigest.com/microcontroller-projects/rain-detector-using-arduino
 
 i just discovered https://circuitdigest.com/microcontroller-projects/ tonight and it is a treasure trove.
+
+
+# password manager
+Password manager
+
+Passwords are managed and stored in an encrypted state on a server. 
+Client sends password over a secure transport
+TLS connection
+### Server 
+ - needs to have a static ip
+ - Have dynamic dns set up server side. 
+ - Assign static ip to server on its gateway protected local network. 
+ - But the gateway could reset and receive a new public facing Ip
+    - Need a DNS service to update this new ip if it changes.
+    - Need to provide a way to update gateways local dns record with the local server Id. (Linux util, or programitically in higher level language. 
+### Client
+needs to open TLS connection with the server. 
+  - Send username and master password. 
+  - If the username doesn’t exist then create one.  
+  - Enter the password they want to add, and the key associated with it (what it’s for)
+  - Retrieve passwords by key
+
+### Things we need to figure out:
+How to initiate a direct secure connection between the client and the server. Should we use TLS? Is there another one more suitable for sending a small variety of short commands?
+TLS involves getting TLS certifications, can maybe involve a free service or software/library into our code that generates these certifications. 
+How to make sure DNS is properly configured to ensure we can easily find our server from behind any network. 
+How to program the socket interfaces on the client and the server. 
+How to ensure the important information is properly encrypted and secured, even if packets are sniffed. 
+A secure method to encrypt the database of the server. Stored in SQL tables. 
+	
+
