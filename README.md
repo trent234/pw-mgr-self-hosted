@@ -31,11 +31,10 @@ i just discovered https://circuitdigest.com/microcontroller-projects/ tonight an
 Password manager
 
 Passwords are managed and stored in an encrypted state on a server. 
-Client sends password over a secure transport
-TLS connection
+Client sends password over a TLS connection
 ### Server 
  - Needs to have a static ip (public facing IP or server's IP behind router on LAN?)
- 	** I believe public IP will have to be variably assigned just because thats the nature 		of Comcast & personal accounts. But thats OK, our DDNS will sort it out for us.
+ 	** I believe public IP will have to be variably assigned just because thats the nature of Comcast & personal accounts. But thats OK, our DDNS will sort it out for us.
  - Have dynamic dns set up server side. public facing.
  	Set up on router, but if its not an option we have ddclient package to work with
  	https://wiki.archlinux.org/index.php/Dynamic_DNS
@@ -43,6 +42,10 @@ TLS connection
  - But the gateway could reset and receive a new public facing Ip
     - Need a DNS service to update this new ip if it changes.
     - Need to provide a way to update gateways local dns record with the local server Id. (Linux util, or programitically in higher level language. 
+ - Server program is tsl socket networking based, there are a few functions: normal user can create/remove/update/delete key value pairs that are websites and passwords. Can only access those records associated with user's username.
+  	All connection data gets logged into database as well e.g IP login time, login attempts, etc
+ 	admin user can log in and get summary of usage by date, frequency, etc
+ 	using connection data, prevent repeated faild logins and other abuses by IP, time, or other metrics.
 ### Client
 needs to open TLS connection with the server. 
   - Send username and master password. 
@@ -79,5 +82,7 @@ A secure method to encrypt the database of the server. Stored in SQL tables.
 Very interesting info here. Only read about half of it, but it provides hashing libs for
 some languages.
 https://www.codeproject.com/Articles/704865/Salted-Password-Hashing-Doing-it-Right
-	
 
+FIDO2/WC3/CTAP
+adding a hardware 2FA could be a goal as well
+https://en.wikipedia.org/wiki/FIDO2_Project
