@@ -68,6 +68,7 @@ https://stackoverflow.com/questions/7698488/turn-a-simple-socket-into-an-ssl-soc
 
 python looks to be the same. from the docs:
 https://docs.python.org/3/library/ssl.html
+Actually nvm this is baked right into the standard python3 libs. this should be not much harder than normal tcp sockets once we understand the handshaking and certificate checking stuff. 
 
 How to ensure the important information is properly encrypted and secured, even if packets are sniffed. 
 Ensure? Good question.. penetration testing? Something like this may be a good confirmation-
