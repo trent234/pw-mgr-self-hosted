@@ -86,3 +86,4 @@ https://www.codeproject.com/Articles/704865/Salted-Password-Hashing-Doing-it-Rig
 FIDO2/WC3/CTAP
 adding a hardware 2FA could be a goal as well
 https://en.wikipedia.org/wiki/FIDO2_Project
+https://www.w3.org/TR/2019/REC-webauthn-1-20190304/#intro
