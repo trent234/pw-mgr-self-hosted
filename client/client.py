@@ -1,16 +1,12 @@
 #!/usr/bin/python 
 
+# stl
 import sys
 import socket
 import ssl
 import time 
-
-# the actual communication between client/server once the connection is setup
-def actual_program(connstream):
-  message = 'Hello, server'
-  connstream.sendall(message.encode())
-  data = connstream.recv(1024)
-  print('Received: ', data)
+# user defined
+import work
 
 def usage():
   print('usage: ./client.py hostname port')    
@@ -43,7 +39,7 @@ def main():
         print('Goodbye.')
         sys.exit()
   
-  actual_program(connstream)  
+  work.actual_program(connstream)  
   
   connstream.shutdown(socket.SHUT_RDWR)
   connstream.close()
