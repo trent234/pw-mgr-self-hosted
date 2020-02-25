@@ -1,11 +1,11 @@
 #!/usr/bin/python 
 
-# stl
+# std libs
 import sys
 import socket
 import ssl
 import time 
-# user defined
+# user defined libs
 import work
 
 def usage():
