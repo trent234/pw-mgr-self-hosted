@@ -22,15 +22,15 @@ def main():
   context = ssl.create_default_context()
   
   # create normal socket
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  # wrap the socket and ret an SSL socket that is tied to the context (settings & certs)
-  connstream = context.wrap_socket(sock, server_hostname=hostname)
-  print(connstream.version())
+  tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+  # wrap the socket and ret an TLS/SSL socket that is tied to the context (settings & certs)
+  tls_sock = context.wrap_socket(tcp_sock, server_hostname=hostname)
+  print(tls_sock.version())
   
   # attempt to connect to the server
   while True:
     try:
-      connstream.connect((hostname, port))
+      tls_sock.connect((hostname, port))
       break;
     except ConnectionRefusedError as error: 
       print(error, ' Try again? (y/n)')
@@ -39,10 +39,10 @@ def main():
         print('Goodbye.')
         sys.exit()
   
-  work.actual_program(connstream)  
+  work.login(tls_sock)  
   
-  connstream.shutdown(socket.SHUT_RDWR)
-  connstream.close()
+  tls_sock.shutdown(socket.SHUT_RDWR)
+  tls_sock.close()
 
 if __name__ == '__main__':
   main()
