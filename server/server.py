@@ -10,6 +10,12 @@ from datetime import datetime
 # user defined
 import work
 
+# clean up on the way out
+def conn_cleanup(tls_sock, sql_conn, client_addr):
+  sql_conn.close()
+  tls_sock.shutdown(socket.SHUT_RDWR)
+  tls_sock.close()
+
 #location needs to be the directory + filename of a text file with 4 lines containing:
 # username, password, ip(likely localhost), and port(default 3306 is a keeper)
 def db_connect(location):
@@ -31,16 +37,6 @@ def db_connect(location):
      
   return conn
 
-def conn_cleanup(tls_sock, sql_conn, client_addr):
-# clean up on the way out
-  sql_conn.close()
-  tls_sock.shutdown(socket.SHUT_RDWR)
-  tls_sock.close()
-  with open('log', 'a') as log:
-    now = datetime.now()
-    print('[', now.strftime("%m/%d/%Y, %H:%M:%S"), '] ', client_addr, ': Disconnected', file=log)
-
-
 def usage():
   print('usage: ./client.py hostname lan_static_ip port')
   exit(0)
@@ -53,38 +49,47 @@ def main():
   port = int(sys.argv[3]) # 11030
   cert_dir = ('/etc/letsencrypt/live/' + sys.argv[1] + '/')
 
-
-  # set tls context
+  # set ssl/tls context
   context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
   context.load_cert_chain(cert_dir + 'fullchain.pem', cert_dir + 'privkey.pem')
   
   # create a regular tcp new socket (gets wrapped in tls once tcp connected.. is this not ideal?)
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  sock.bind((lan_static_ip, port))
-  sock.listen(2)
+  tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+  # create server-side SSL socket for the connection by wrapping a tcp socket
+  tls_sock = context.wrap_socket(tcp_sock, server_side=True)
+  tls_sock.bind((lan_static_ip, port))
+  tls_sock.listen(2)
   
   # now deal with incoming connections from clients
   while True:
-    # sit, wait until client tries to connect to the port for this program 
-    tcp_sock, client_addr = sock.accept()
-    with open('log', 'a') as log:
-      now = datetime.now()
-      print('[', now.strftime("%m/%d/%Y, %H:%M:%S"), '] ', client_addr, ': Connected', file=log)
-    # create server-side SSL socket for the connection 
-    tls_sock = context.wrap_socket(tcp_sock, server_side=True)
-    # connect to sql db and then, for interacting with db, use a cursor obj
+    # wait until client tries to connect to the port for this program. then make connection.
+    # and fire up sql db and then, for interacting with db, use a cursor obj
+    tls_conn, client_addr = tls_sock.accept()
     sql_conn = db_connect('sql_login')
     sql_cursor = sql_conn.cursor()
     sql_cursor.execute("USE pw_mgr_db")
+
+    # Guard against spam attempts to log in / brute force      
+    if work.ip_spam_check(sql_cursor, client_addr[0]) > 4:
+      work.log_ip(sql_cursor, client_addr[0], 'False')
+      tls_conn.sendall(b'Spam attempts detected from this IP. Exiting.')
+      conn_cleanup(tls_conn, sql_conn, client_addr)
+      continue
+
     # username/pw login check phase
-    user = work.client_login(tls_sock, sql_cursor) 
+    user = work.client_login(tls_conn, sql_cursor) 
     if user == None:
-      tls_sock.sendall(b'Login credentials invalid. Exiting.')
-      conn_cleanup(tls_sock, sql_conn, client_addr)
-    else:
-      tls_sock.sendall(b'You\'ve successfully logged in ' + user.encode() + b'!')
-      # here we do the retrieval of the password for the account and all the other jazz thats the point of this program
-      conn_cleanup(tls_sock, sql_conn, client_addr)
+      work.log_ip(sql_cursor, client_addr[0], 'False')
+      tls_conn.sendall(b'Login credentials invalid. Exiting.')
+      conn_cleanup(tls_conn, sql_conn, client_addr)
+      continue
+
+    # here we do the retrieval of the password for the account 
+    # and all the other jazz thats the point of this program
+    work.log_ip(sql_cursor, client_addr[0], 'True')
+    tls_conn.sendall(b'You\'ve successfully logged in ' + user.encode() + b'!')
+
+    conn_cleanup(tls_conn, sql_conn, client_addr)
 
 if __name__ == '__main__':
   main()
