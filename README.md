@@ -15,6 +15,7 @@ To do:
 
 fido2 for 2fa
 RFC writeup
+sql injection prevention
 
 Done:
 
