@@ -1,12 +1,13 @@
-#!/usr/bin/python 
+#!/usr/bin/python3 
 
-# stl
+# std libs
 import sys
 import socket
 import mariadb
 import ssl
 import time 
 from datetime import datetime
+import argparse
 # user defined
 import work
 
@@ -21,8 +22,8 @@ def conn_cleanup(tls_sock, sql_conn, client_addr):
 def db_connect(location):
   try:
     login_info = open(location, "r").readlines()
-  except FileNotFoundError as e:
-    print(f"Error opening file for db credentials: {e}")
+  except FileNotFoundError as error:
+    print("[SERVER]: Error opening file for db credentials: " + error + " at location " + location)
     sys.exit(1)
     
   try:
@@ -31,34 +32,31 @@ def db_connect(location):
     password=login_info[1].rstrip(),
     host=login_info[2].rstrip(),
     port=int(login_info[3].rstrip()))
-  except mariadb.Error as e:
-    print(f"Error connecting to MariaDB Platform: {e}")
+  except mariadb.Error as error:
+    print("[SERVER]: Error connecting to MariaDB Platform: " + error)
     sys.exit(1)
      
   return conn
 
-def usage():
-  print('usage: ./client.py hostname lan_static_ip port')
-  exit(0)
-
 def main():
-  if len(sys.argv) < 3:
-    usage()
- 
-  lan_static_ip = sys.argv[2] # 192.168.1.100 
-  port = int(sys.argv[3]) # 11030
-  cert_dir = ('/etc/letsencrypt/live/' + sys.argv[1] + '/')
+  parser = argparse.ArgumentParser(description='Server host for password retrieval program.')
+  parser.add_argument('--hostname', required=True, help='our hostname')
+  parser.add_argument('--port', required=True, type=int, help='the port on the server')
+  parser.add_argument('--lan_ip', required=True, help='the server\'s static ip in the lan')
+  args = parser.parse_args()
+
+  cert_dir = ('/etc/letsencrypt/live/' + args.hostname + '/')
 
   # set ssl/tls context
   context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
   context.load_cert_chain(cert_dir + 'fullchain.pem', cert_dir + 'privkey.pem')
   
-  # create a regular tcp new socket (gets wrapped in tls once tcp connected.. is this not ideal?)
+  # create a regular tcp new socket 
   tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  # create server-side SSL socket for the connection by wrapping a tcp socket
+  # create server-side TLS/SSL socket for the connection by wrapping a tcp socket
   tls_sock = context.wrap_socket(tcp_sock, server_side=True)
-  tls_sock.bind((lan_static_ip, port))
-  tls_sock.listen(2)
+  tls_sock.bind((args.lan_ip, args.port))
+  tls_sock.listen(1)
   
   # now deal with incoming connections from clients
   while True:
@@ -71,8 +69,8 @@ def main():
 
     # Guard against spam attempts to log in / brute force      
     if work.ip_spam_check(sql_cursor, client_addr[0]) > 4:
-      work.log_ip(sql_cursor, client_addr[0], 'False')
-      tls_conn.sendall(b'Spam attempts detected from this IP. Exiting.')
+      attempt_count = work.log_ip(sql_cursor, client_addr[0], 'False')
+      tls_conn.sendall(b'[FAIL]: ' + attempt_count + ' spam attempts detected from this IP.')
       conn_cleanup(tls_conn, sql_conn, client_addr)
       continue
 
@@ -80,14 +78,14 @@ def main():
     user = work.client_login(tls_conn, sql_cursor) 
     if user == None:
       work.log_ip(sql_cursor, client_addr[0], 'False')
-      tls_conn.sendall(b'Login credentials invalid. Exiting.')
+      tls_conn.sendall(b'[FAIL]: Login credentials invalid.')
       conn_cleanup(tls_conn, sql_conn, client_addr)
       continue
 
     # here we do the retrieval of the password for the account 
     # and all the other jazz thats the point of this program
     work.log_ip(sql_cursor, client_addr[0], 'True')
-    tls_conn.sendall(b'You\'ve successfully logged in ' + user.encode() + b'!')
+    tls_conn.sendall(b'[INFO]: Login for user: ' + user.encode() + b' is successful.')
 
     conn_cleanup(tls_conn, sql_conn, client_addr)
 
