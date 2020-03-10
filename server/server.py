@@ -60,6 +60,7 @@ def main():
   
   # now deal with incoming connections from clients
   while True:
+    # *** client interaction #1: initiates connection
     # wait until client tries to connect to the port for this program. then make connection.
     # and fire up sql db and then, for interacting with db, use a cursor obj
     tls_conn, client_addr = tls_sock.accept()
@@ -69,7 +70,7 @@ def main():
     log = ''
     pw = 0
 
-    # *** response #1: resp to a login attempt. 0 = fail 1 = success. subsequent strings = log ***
+    # *** server interaction #1: resp to a connection attempt. 0 = fail 1 = success. subsequent strings = log 
     # Guard against spam attempts to log in / brute force      
     attempt_count = work.ip_spam_check(sql_cursor, client_addr[0]) 
     if attempt_count > 4:
@@ -79,8 +80,15 @@ def main():
       conn_cleanup(tls_conn, sql_conn, client_addr)
       continue
 
-    # username/pw login check phase. log ip either way for records.
-    user = work.client_login(tls_conn, sql_cursor) 
+    # *** client interaction #2: username/pw login check phase. log ip either way for records.
+    # *** server interaction #2: resp to a login attempt. 0 = fail 1 = success. subsequent strings = log 
+    credentials = tls_conn.recv(1024).decode().split()
+    if len(credentials) != 2:
+      log += (b'[FAIL]: Syntax is [username password]. Two seperate strings not detected here.')
+      tls_conn.sendall(str(pw).encode() + log.encode())
+      conn_cleanup(tls_conn, sql_conn, client_addr)
+      continue
+    user = work.client_login(sql_cursor, credentials[0], credentials[1]) 
     if user == False:
       work.log_ip(sql_cursor, client_addr[0], 'False')
       log += ('[FAIL]: Login credentials invalid.\n ')
@@ -88,30 +96,44 @@ def main():
       conn_cleanup(tls_conn, sql_conn, client_addr)
       continue
     work.log_ip(sql_cursor, client_addr[0], 'True')
-    log += ('[INFO]: Login for user: ' + user + ' is successful.\n ')
-    tls_conn.sendall(str(1).encode() + log.encode())
-    log = '' #reset log after transmit
+    log += ('[INFO]: Login for user \"' + user + '\" is successful.\n ')
+    pw = 1
+    tls_conn.sendall(str(pw).encode() + log.encode())
+    #reset log after transmit
+    log = '' 
+    pw = 0
     
-    # here we do the create/remove/update/delete aka main point of the program
+    # *** client interaction interaction #3 send either "create/update account pw" 
+    # or "read/delete account"
+    # *** server interaction #3: attempt to carry out task. create/read/update: pw followed by subsequent strings = log. 
+    # delete: 1 followed by subsequent strings = 1og. for all: if fail then 0 followed by log strings.
     request = tls_conn.recv(1024).decode().split()
     if request[0].upper() == 'CREATE':
       if work.create(sql_cursor, user, request) == False:
         log += ('[FAIL]: that account already exists for this user.')
       else: 
         log += ('[INFO]: new record created.')
+        pw = request[2]
     elif request[0].upper() == 'UPDATE':
       if work.update(sql_cursor, user, request) == False:
         log += ('[FAIL]: that account doesn\'t exist for this user.')
       else:
         log += ('[INFO]: record\'s password has been updated.')
+        pw = request[2]
     elif request[0].upper() == 'READ':
       pw = work.read(sql_cursor, user, request)
-      if pw == False:
-        log += ('[FAIL]: read.')
+      if pw == 0:
+        log += ('[FAIL]: That account doesn\'t exist for your account, so no pw could be retrieved.')
       else:
         log += ('[INFO]: record has been retrieved.')
+    elif request[0].upper() == 'DELETE':
+      if work.delete(sql_cursor, user, request) == False:
+        log += ('[FAIL]: No account with that name, so can\'t delete any pw for it.')
+      else:
+        pw = 1
+        log += ('[INFO]: record has been deleted.')
      
-    tls_conn.sendall(str(pw).encode() + log.encode())
+    tls_conn.sendall((str(pw) + ' ' +  log).encode())
       
     conn_cleanup(tls_conn, sql_conn, client_addr)
 
