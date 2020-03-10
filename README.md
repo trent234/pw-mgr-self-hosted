@@ -1,22 +1,20 @@
 # password manager
 
 ## protocol:
+* 1)
 * tls handshaking / init connection
+* server will respond with first byte 0 or 1 for success of login spam check followed by logs
+* 2)
 * client send string with user / pass with space between
-* server will respond with first byte 0 or 1 for success
-* and every subsequent byte is logs
-* if 0, server has terminated the connection 
-* two reasons can lead to this- incorrect login, or spamming login attempts from a single ip
-
-* then part 2 to still finish is client sends [action account pw] for create / update
+* server will respond with first byte 0 or 1 for success of login credentials followed by logs
+* 3)
+* client sends [action account pw] for create / update
 * or [action account] for read delete
-* client will respond with 0 or 1 again for success followed the pw followed by logs all space seperated
-* delete will have None in pw position
+* server will respond on success with pw (or 0 for delete action) followed by logs
+* fail = 0 followed by logs
 
 ## To do:
 
-* finish adding delete to complete create/read/update/delete functionality bundle
-* format response from server in part to to match the spec listed above
 * RFC writeup
 * fido2 for 2fa
 * sql injection prevention
@@ -29,6 +27,8 @@
 * login spam / brute force check checks for repeated failed logins
 * login feature checks client input agains login db
 * actual db for "password" key val pairs
+* create/read/update/delete functionality bundle
+* formatted response from server in part to match the spec listed above
 
 ### server setup:
 * pi with raspian linux
