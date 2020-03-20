@@ -15,11 +15,12 @@
 
 ## To do:
 
-* RFC writeup
 * fido2 for 2fa
 * sql injection prevention
 
 ## Done:
+
+* RFC writeup
 
 ### pw mgr:
 * server and client programs connect via tls/ssl
