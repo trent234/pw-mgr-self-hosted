@@ -42,23 +42,24 @@ def main():
     print('[INFO]: ' + tls_sock.version())
   except ConnectionRefusedError as error: 
     print('[ERROR]: ' + str(error))
-    conn_cleanup(tls_sock)
     exit(1)
   
   # *** client interaction #2: attempt to log in 
   tls_sock.sendall((args.username + ' ' + args.password).encode())
   server_response = tls_sock.recv(1024).decode()
-  success = server_response[0]
+  success = int(server_response[0])
   server_response = server_response[1:]
   # *** server interaction #3: 0 means we failed login either bc of spam or bad login info. server conn closed.
   if success == 0:
     conn_cleanup(tls_sock)
+    print(str(server_response))
     exit(1)
 
   # client interaction #3: attempt to complete user's request 
   if args.action.upper() == 'CREATE' or args.action.upper() == 'UPDATE':
     if len(args.account) != 2:
       print('[FAIL]: Two args needed for --account if --action == create or update. [newacct newpw] two strings were not detected.')
+      conn_cleanup(tls_sock)
       exit(1)
     tls_sock.sendall((args.action + ' ' + args.account[0] + ' ' + args.account[1]).encode())
   elif args.action.upper() == 'READ' or args.action.upper() == 'DELETE':
