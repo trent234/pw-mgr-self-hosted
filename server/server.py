@@ -108,6 +108,9 @@ def main():
     # *** server interaction #3: attempt to carry out task. create/read/update: pw followed by subsequent strings = log. 
     # delete: 1 followed by subsequent strings = 1og. for all: if fail then 0 followed by log strings.
     request = tls_conn.recv(1024).decode().split()
+    if not request:
+      conn_cleanup(tls_conn, sql_conn, client_addr)
+      continue
     if request[0].upper() == 'CREATE':
       if work.create(sql_cursor, user, request) == False:
         log += ('[FAIL]: that account already exists for this user.')
