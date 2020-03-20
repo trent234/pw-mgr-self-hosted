@@ -10,7 +10,7 @@
 * 3)
 * client sends [action account pw] for create / update
 * or [action account] for read delete
-* server will respond on success with pw (or 0 for delete action) followed by logs
+* server will respond on success with pw (or 1 for delete action) followed by logs
 * fail = 0 followed by logs
 
 ## To do:
